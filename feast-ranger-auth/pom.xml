@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <artifactId>feast-ranger-auth</artifactId>
+    <name>FEAST Ranger Auth Proxy</name>
+    <description>FEAST Ranger Auth Proxy</description>
+    <version>0.0.1-SNAPSHOT</version>
+    <packaging>jar</packaging>
+    <parent>
+        <groupId>za.co.discovery.health.bigdata</groupId>
+        <artifactId>feast-ranger</artifactId>
+        <version>0.0.1-SNAPSHOT</version>
+    </parent>
+    <properties>
+        <spring.kerberos.version>1.0.1.RELEASE</spring.kerberos.version>
+
+    </properties>
+    <dependencies>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-autoconfigure</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.ldap</groupId>
+            <artifactId>spring-ldap-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-ldap</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.retry</groupId>
+            <artifactId>spring-retry</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.thymeleaf.extras</groupId>
+            <artifactId>thymeleaf-extras-springsecurity5</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-thymeleaf</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.security.kerberos</groupId>
+            <artifactId>spring-security-kerberos-web</artifactId>
+            <version>${spring.kerberos.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.security.kerberos</groupId>
+            <artifactId>spring-security-kerberos-client</artifactId>
+            <version>${spring.kerberos.version}</version>
+        </dependency>
+
+
+        <dependency>
+            <groupId>org.apache.ranger</groupId>
+            <artifactId>ranger-plugins-common</artifactId>
+            <version>${ranger.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.ranger</groupId>
+            <artifactId>ranger-intg</artifactId>
+            <version>${ranger.version}</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.ranger</groupId>
+            <artifactId>ranger-plugins-audit</artifactId>
+            <version>${ranger.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.mlflow</groupId>
+            <artifactId>mlflow-client</artifactId>
+            <version>2.2.1</version>
+        </dependency>
+        <!--        <dependency>-->
+<!--            <groupId>org.elasticsearch</groupId>-->
+<!--            <artifactId>elasticsearch-x-content</artifactId>-->
+<!--            <version>6.8.23</version>-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>org.elasticsearch</groupId>-->
+<!--            <artifactId>elasticsearch-core</artifactId>-->
+<!--            <version>6.8.23</version>-->
+<!--        </dependency>-->
+
+
+<!--        <dependency>-->
+<!--            <groupId>za.co.discovery.health.bigdata</groupId>-->
+<!--            <artifactId>mlflow-plugin</artifactId>-->
+<!--            <version>0.0.1-SNAPSHOT</version>-->
+<!--            <scope>compile</scope>-->
+<!--        </dependency>-->
+
+
+    </dependencies>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>3.1.0</version>
+            </plugin>
+        </plugins>
+<!--        <resources>-->
+<!--            <resource>-->
+<!--                <directory>src/main/resources</directory>-->
+<!--                <filtering>true</filtering>-->
+<!--                <excludes>-->
+<!--                    <exclude>*.properties</exclude>-->
+<!--                </excludes>-->
+<!--            </resource>-->
+<!--        </resources>-->
+    </build>
+
+</project>

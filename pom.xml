@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>2.7.5</version>
+        <relativePath/> <!-- lookup parent from repository -->
+    </parent>
+    <groupId>za.co.discovery.health.bigdata</groupId>
+    <artifactId>feast-ranger</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+    <packaging>pom</packaging>
+    <name>FEAST ranger</name>
+    <description>FEAST ranger</description>
+
+    <properties>
+        <java.version>8</java.version>
+        <ranger.version>2.3.0</ranger.version>
+        <hadoop.version>3.3.0</hadoop.version>
+    </properties>
+    <modules>
+
+<!--        <module>feast-ranger-auth</module>-->
+        <module>ranger-service</module>
+    </modules>
+    <dependencies>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-maven-plugin</artifactId>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
+    <repositories>
+
+        <!-- <repository>
+            <id>dhs-nexus3-cloudera</id>
+            <name>Proxied DHS Nexus3 cloudera maven repo</name>
+            <url>https://nexus.discsrv.co.za/repository/proxy_cloudera-maven/</url>
+        </repository>
+
+        <repository>
+            <id>dhs-nexus</id>
+            <name>dhs-nexus</name>
+            <url>http://nexusrepoman.discsrv.co.za:8081/nexus/service/local/repo_groups/discovery-group/content/</url>
+        </repository>
+
+        <repository>
+            <id>dhs-nexus-snapshot</id>
+            <name>dhs-nexus-snapshot</name>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+            <url>http://nexusrepoman.discsrv.co.za:8081/nexus/content/groups/discovery-snapshot/</url>
+        </repository> -->
+
+<!--        <repository>-->
+<!--            <id>apache.public.https</id>-->
+<!--            <name>Apache Development Repository</name>-->
+<!--            <url>https://repository.apache.org/content/repositories/public</url>-->
+<!--            <releases>-->
+<!--                <enabled>true</enabled>-->
+<!--            </releases>-->
+<!--            <snapshots>-->
+<!--                <enabled>false</enabled>-->
+<!--            </snapshots>-->
+<!--        </repository>-->
+<!--        <repository>-->
+<!--            <id>apache.snapshots.https</id>-->
+<!--            <name>Apache Development Snapshot Repository</name>-->
+<!--            <url>https://repository.apache.org/content/repositories/snapshots</url>-->
+<!--            <snapshots>-->
+<!--                <enabled>true</enabled>-->
+<!--            </snapshots>-->
+<!--        </repository>-->
+
+
+
+    </repositories>
+</project>

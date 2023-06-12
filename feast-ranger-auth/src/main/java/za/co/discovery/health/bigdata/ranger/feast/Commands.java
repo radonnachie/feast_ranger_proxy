@@ -244,7 +244,7 @@ public enum Commands {
     public final String accessType;
     Commands(
         HttpMethod method,
-        ResourceEnum resource,
+        String resource,
         String accessType
     ) {
         this.method = method;

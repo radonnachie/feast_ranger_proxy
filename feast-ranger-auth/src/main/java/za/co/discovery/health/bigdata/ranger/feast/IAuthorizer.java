@@ -28,7 +28,7 @@ interface IAuthorizer {
 
     boolean authorizePostRequest(
         String project,
-        String resource,
+        String resourceType,
         String name,
         String user,
         Set<String> userGroups
@@ -36,7 +36,7 @@ interface IAuthorizer {
 
     boolean authorizeDeleteRequest(
         String project,
-        String resource,
+        String resourceType,
         String name,
         String user,
         Set<String> userGroups
@@ -44,7 +44,7 @@ interface IAuthorizer {
 
     boolean authorizeGetRequest(
         String project,
-        String resource,
+        String resourceType,
         String name,
         String user,
         Set<String> userGroups
@@ -52,7 +52,7 @@ interface IAuthorizer {
 
     Map<String, Boolean> authorizeListRequest(
         String project,
-        String resource,
+        String resourceType,
         List<String> names,
         String user,
         Set<String> userGroups
@@ -60,12 +60,10 @@ interface IAuthorizer {
     
     boolean authorizeGetProjectRequest(
         String project,
-        String resource,
+        String resourceType,
         String user,
         Set<String> userGroups
     );
-
-    Map<String, Boolean> authorizeResourceList(List<String> models, String user, Set<String> userGroups);
 
     void refresh();
 }

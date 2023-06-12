@@ -244,6 +244,7 @@ public class ProxyController {
         HttpServletResponse response
     ) throws URISyntaxException, HttpException{
         return service.processGetProjectFeastMetadata(
+            project,
             body,
             method,
             request,

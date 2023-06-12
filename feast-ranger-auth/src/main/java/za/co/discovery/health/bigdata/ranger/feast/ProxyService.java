@@ -124,7 +124,7 @@ public class ProxyService {
         assert grantedAuthorities != null;
         Set<String> groups =  grantedAuthorities.stream().map(GrantedAuthority::getAuthority).collect(Collectors.toSet());
         
-        logger.info(requestUrl + ", " + request.getQueryString());
+        logger.info(request.getRequestURI() + ", " + request.getQueryString());
         logger.info(body);
         if (authorizer.authorizePostRequest(
             project,
@@ -159,7 +159,7 @@ public class ProxyService {
         assert grantedAuthorities != null;
         Set<String> groups =  grantedAuthorities.stream().map(GrantedAuthority::getAuthority).collect(Collectors.toSet());
         
-        logger.info(requestUrl + ", " + request.getQueryString());
+        logger.info(request.getRequestURI() + ", " + request.getQueryString());
         logger.info(body);
         if (authorizer.authorizeDeleteRequest(
             project,
@@ -194,7 +194,7 @@ public class ProxyService {
         assert grantedAuthorities != null;
         Set<String> groups =  grantedAuthorities.stream().map(GrantedAuthority::getAuthority).collect(Collectors.toSet());
         
-        logger.info(requestUrl + ", " + request.getQueryString());
+        logger.info(request.getRequestURI() + ", " + request.getQueryString());
         logger.info(body);
         if (authorizer.authorizeGetRequest(
             project,
@@ -217,6 +217,20 @@ public class ProxyService {
         HttpServletResponse response,
         String traceId
     ) throws URISyntaxException, HttpStatusCodeException {
+        ThreadContext.put("traceId", traceId);
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String user = authentication == null ? null: authentication.getName();
+        if(user != null){
+            user = user.split("@")[0];
+        }
+        Collection<GrantedAuthority> grantedAuthorities = authentication == null ? null: (Collection<GrantedAuthority>) authentication.getAuthorities();
+        assert grantedAuthorities != null;
+        Set<String> groups =  grantedAuthorities.stream().map(GrantedAuthority::getAuthority).collect(Collectors.toSet());
+
+        logger.info(request.getRequestURI() + ", " + request.getQueryString());
+        logger.info(body);
+
         ResponseEntity<FeastResourceProtos> resources = buildProxiedResponse(body, method,  request,  response,  traceId, FeastResourceProtos.class);
         if(resources == null || resources.getStatusCode() != HttpStatus.OK){
             return null;
@@ -231,13 +245,14 @@ public class ProxyService {
             groups
         );
 
-        Map<String, String> nameProtostringMap resources.getBody().getNameProtostringMap();
+        Map<String, String> nameProtostringMap = resources.getBody().getNameProtostringMap();
         resources.getBody().setNames(
             nameProtostringMap.entrySet().stream()
                 .filter(
                     kv ->
                         items.containsKey(kv.getKey()) && items.get(kv.getKey())
                 )
+                .map(kv -> kv.getKey())
                 .collect(Collectors.toList())
         );
         resources.getBody().setProtostrings(
@@ -270,8 +285,8 @@ public class ProxyService {
         Collection<GrantedAuthority> grantedAuthorities = authentication == null ? null: (Collection<GrantedAuthority>) authentication.getAuthorities();
         assert grantedAuthorities != null;
         Set<String> groups =  grantedAuthorities.stream().map(GrantedAuthority::getAuthority).collect(Collectors.toSet());
-        
-        logger.info(requestUrl + ", " + request.getQueryString());
+
+        logger.info(request.getRequestURI() + ", " + request.getQueryString());
         logger.info(body);
         if (authorizer.authorizeGetProjectRequest(
             project,
@@ -304,12 +319,12 @@ public class ProxyService {
         Collection<GrantedAuthority> grantedAuthorities = authentication == null ? null: (Collection<GrantedAuthority>) authentication.getAuthorities();
         assert grantedAuthorities != null;
         Set<String> groups =  grantedAuthorities.stream().map(GrantedAuthority::getAuthority).collect(Collectors.toSet());
-        
-        logger.info(requestUrl + ", " + request.getQueryString());
+
+        logger.info(request.getRequestURI() + ", " + request.getQueryString());
         logger.info(body);
         if (authorizer.authorizePostRequest(
             project,
-            String(`${resource}_user_metadata`),
+            String.format("%s_user_metadata", resource),
             name,
             user,
             groups
@@ -339,12 +354,12 @@ public class ProxyService {
         Collection<GrantedAuthority> grantedAuthorities = authentication == null ? null: (Collection<GrantedAuthority>) authentication.getAuthorities();
         assert grantedAuthorities != null;
         Set<String> groups =  grantedAuthorities.stream().map(GrantedAuthority::getAuthority).collect(Collectors.toSet());
-        
-        logger.info(requestUrl + ", " + request.getQueryString());
+
+        logger.info(request.getRequestURI() + ", " + request.getQueryString());
         logger.info(body);
         if (authorizer.authorizeGetRequest(
             project,
-            String(`${resource}_user_metadata`),
+            String.format("%s_user_metadata", resource),
             name,
             user,
             groups
@@ -372,8 +387,8 @@ public class ProxyService {
         Collection<GrantedAuthority> grantedAuthorities = authentication == null ? null: (Collection<GrantedAuthority>) authentication.getAuthorities();
         assert grantedAuthorities != null;
         Set<String> groups =  grantedAuthorities.stream().map(GrantedAuthority::getAuthority).collect(Collectors.toSet());
-        
-        logger.info(requestUrl + ", " + request.getQueryString());
+
+        logger.info(request.getRequestURI() + ", " + request.getQueryString());
         logger.info(body);
         if (authorizer.authorizeGetProjectRequest(
             project,
@@ -409,15 +424,6 @@ public class ProxyService {
         return headers;
     }
 
-    private void updateModelPolicy(String userName, String modelName){
-        updatePolicy(userName, modelName, "model");
-        authorizer.refresh();
-    }
-
-    private void updateExperimentPolicy(String userName, String experimentName){
-        updatePolicy(userName, experimentName, "experiment");
-        authorizer.refresh();
-    }
     private void updatePolicy(String userName, String resourceName, String resourceType){
          /*
         Get a policy by name
@@ -501,10 +507,6 @@ public class ProxyService {
             logger.error(e);
         }
 
-    }
-
-    private boolean matchUrl(String requestUrl, Commands cmd){
-        return (requestUrl.contains(cmd.path) && requestUrl.contains(cmd.cmd));
     }
 
     private <T> ResponseEntity<T> buildProxiedResponse(

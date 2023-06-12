@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class FeastRangerServiceTest {
 
-    // private final static String FEAST_URL = "http://dhtairflow0001:8313";
+     private final static String FEAST_URL = "http://dhtairflow0001:8313";
     private List<String> resourceTypes = new ArrayList<String>(Arrays.asList(
         "entity",
         "data_source",

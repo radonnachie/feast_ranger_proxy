@@ -133,4 +133,26 @@
 <!--        </resources>-->
     </build>
 
+    <repositories>
+     <repository>
+        <id>dhs-nexus3-cloudera</id>
+        <name>Proxied DHS Nexus3 cloudera maven repo</name>
+        <url>https://nexus.discsrv.co.za/repository/proxy_cloudera-maven/</url>
+    </repository>
+
+    <repository>
+        <id>dhs-nexus</id>
+        <name>dhs-nexus</name>
+        <url>http://nexusrepoman.discsrv.co.za:8081/nexus/service/local/repo_groups/discovery-group/content/</url>
+    </repository>
+
+    <repository>
+        <id>dhs-nexus-snapshot</id>
+        <name>dhs-nexus-snapshot</name>
+        <snapshots>
+            <enabled>true</enabled>
+        </snapshots>
+        <url>http://nexusrepoman.discsrv.co.za:8081/nexus/content/groups/discovery-snapshot/</url>
+    </repository>
+    </repositories>
 </project>

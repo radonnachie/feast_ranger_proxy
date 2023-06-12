@@ -2,7 +2,7 @@ package za.co.discovery.health.bigdata.ranger.feast.dto;
 
 import java.io.Serializable;
 
-public class FeastResourceLastUpdatedDatetime.java implements Serializable {
+public class FeastResourceLastUpdatedDatetime implements Serializable {
 	private String datetime;
 
 	public String getDatetime() {

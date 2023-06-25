@@ -20,17 +20,13 @@ import org.apache.http.message.BasicHeaderElementIterator;
 import org.apache.http.protocol.HTTP;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.ssl.SSLContextBuilder;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.PropertySource;
 import org.springframework.context.annotation.Scope;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.ldap.authentication.ad.ActiveDirectoryLdapAuthenticationProvider;
-import org.springframework.security.web.SecurityFilterChain;
 
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
@@ -39,6 +35,7 @@ import java.security.NoSuchAlgorithmException;
 import static org.springframework.security.config.Customizer.withDefaults;
 
 @Configuration
+@PropertySource("classpath:ranger-feast-proxy.properties")
 @Log4j2
 public class ApplicationConfig {
     private static final int CONNECT_TIMEOUT = 30000;
@@ -52,6 +49,26 @@ public class ApplicationConfig {
     private static final int MAX_TOTAL_CONNECTIONS = 50;
     private static final int DEFAULT_KEEP_ALIVE_TIME_MILLIS = 20 * 1000;
     private static final int CLOSE_IDLE_CONNECTION_WAIT_TIME_SECS = 30;
+
+    @Value("${feast.url}")
+    String feastUrl;
+
+    @Value("${ranger.url}")
+    String rangerHostName;
+
+    @Value("${ranger.authtype:basic}")
+    String rangerAuthType;
+
+    @Value("${ranger.keytab:empty}")
+    String rangerKeytab;
+    @Value("${ranger.username}")
+    String rangerUserName;
+
+    @Value("${ranger.password:empty}")
+    String rangerPassword;
+
+    @Value("${ranger.feast_service}")
+    String rangerServiceName;
 
     @Bean
     public CloseableHttpClient httpClient() {
@@ -143,6 +160,21 @@ public class ApplicationConfig {
         IAuthorizer authorizer = new DefaultAuthorizer();
         authorizer.init();
         return authorizer;
+    }
+
+    @Bean
+    ProxyService proxyService(){
+        return new ProxyService(
+                authoriser(),
+                clientHttpRequestFactory(),
+                feastUrl,
+                rangerHostName,
+                rangerAuthType,
+                rangerKeytab,
+                rangerUserName,
+                rangerPassword,
+                rangerServiceName
+        );
     }
 
     @Bean

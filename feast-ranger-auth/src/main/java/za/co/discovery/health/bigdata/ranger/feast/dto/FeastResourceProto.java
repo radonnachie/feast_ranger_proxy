@@ -5,7 +5,7 @@ import java.io.Serializable;
 public class FeastResourceProto implements Serializable {
     private String protostring;
 
-    String getProtostring() {
+    public String getProtostring() {
         return this.protostring;
     }
 

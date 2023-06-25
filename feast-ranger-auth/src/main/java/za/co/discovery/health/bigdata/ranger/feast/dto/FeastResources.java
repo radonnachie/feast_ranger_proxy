@@ -6,7 +6,7 @@ import java.util.List;
 public class FeastResources implements Serializable {
     private List<FeastResource> resources;
 
-    List<FeastResource> getResources() {
+    public List<FeastResource> getResources() {
         return this.resources;
     }
 

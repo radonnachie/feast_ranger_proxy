@@ -24,7 +24,8 @@ public class ActiveDirectoryLdapAuthoritiesPopulator implements LdapAuthoritiesP
                 groups.length);
 
         for (String group : groups) {
-            authorities.add(new SimpleGrantedAuthority(new DistinguishedName(group)
+            authorities.add(new SimpleGrantedAuthority(new
+                    DistinguishedName(group)
                     .removeLast().getValue()));
         }
 

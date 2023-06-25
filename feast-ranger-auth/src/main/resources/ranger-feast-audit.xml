@@ -20,7 +20,7 @@
     <!-- HDFS audit provider configuration -->
     <property>
         <name>xasecure.audit.destination.feast</name>
-        <value>false</value>
+        <value>true</value>
     </property>
 
     <property>

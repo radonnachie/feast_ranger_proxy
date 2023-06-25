@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 public class LoginController {
     @GetMapping("/login")
     public String login() {
+        System.out.println("LOGGING IN.....");
         return "login";
     }
 

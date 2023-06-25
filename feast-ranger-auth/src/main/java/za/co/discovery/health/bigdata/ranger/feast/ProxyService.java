@@ -33,31 +33,61 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 
-@Service
 public class ProxyService {
     HttpComponentsClientHttpRequestFactory httpRequestFactory;
 
-    @Value("${feast.url}")
-    String feastUrl;
-
-    @Value("${ranger.url}")
-    String rangerHostName = "http://172.16.0.86:6080";
-    String rangerAuthType = "none";
-
-    @Value("${ranger.admin}")
-    String rangerUserName = "admin";
-    @Value("${ranger.password}")
-    String rangerPassword = "G0dz1ll421";
-
-    @Value("${ranger.feast_service}")
-    String rangerServiceName = "ross_feast";
+    private final String feastUrl;
+    private final String rangerHostName;
+    private final String rangerAuthType;
+    private final String rangerKeytab;
+    private final String rangerUserName;
+    private final String rangerPassword;
+    private final String rangerServiceName;
 
     private final IAuthorizer authorizer;
+    private final RangerClient rangerClient;
     private final static Logger logger = LogManager.getLogger(ProxyService.class);
 
-    ProxyService(IAuthorizer authorizer, HttpComponentsClientHttpRequestFactory httpRequestFactory){
+    ProxyService(
+        IAuthorizer authorizer,
+        HttpComponentsClientHttpRequestFactory httpRequestFactory,
+
+        String feastUrl,
+        String rangerHostName,
+        String rangerAuthType,
+        String rangerKeytab,
+        String rangerUserName,
+        String rangerPassword,
+        String rangerServiceName
+
+    ){
+        this.feastUrl = feastUrl;
+        this.rangerHostName = rangerHostName;
+        this.rangerAuthType = rangerAuthType;
+        this.rangerKeytab = rangerKeytab;
+        this.rangerUserName = rangerUserName;
+        this.rangerPassword = rangerPassword;
+        this.rangerServiceName = rangerServiceName;
         this.authorizer = authorizer;
         this.httpRequestFactory = httpRequestFactory;
+
+        if(rangerAuthType.equals("kerberos")){
+            this.rangerClient = new RangerClient(
+                    rangerHostName,
+                    rangerAuthType,
+                    rangerUserName,
+                    rangerKeytab,
+                    null
+            );
+        }else{
+            this.rangerClient = new RangerClient(
+                    rangerHostName,
+                    rangerAuthType,
+                    rangerUserName,
+                    rangerPassword,
+                    null
+            );
+        }
     }
 
     public ResponseEntity<?> processGetHealth(
@@ -118,11 +148,13 @@ public class ProxyService {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String user = authentication == null ? null: authentication.getName();
         if(user != null){
-            user = user.split("@")[0];
+            user = user.split("@")[0].toLowerCase();
         }
         Collection<GrantedAuthority> grantedAuthorities = authentication == null ? null: (Collection<GrantedAuthority>) authentication.getAuthorities();
         assert grantedAuthorities != null;
-        Set<String> groups =  grantedAuthorities.stream().map(GrantedAuthority::getAuthority).collect(Collectors.toSet());
+        Set<String> groups =  grantedAuthorities.stream().map(
+                item -> item.getAuthority().toLowerCase()
+        ).collect(Collectors.toSet());
         
         logger.info(request.getRequestURI() + ", " + request.getQueryString());
         logger.info(body);
@@ -186,13 +218,16 @@ public class ProxyService {
         ThreadContext.put("traceId", traceId);
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        logger.info(authentication);
         String user = authentication == null ? null: authentication.getName();
+        logger.info(user);
         if(user != null){
             user = user.split("@")[0];
         }
         Collection<GrantedAuthority> grantedAuthorities = authentication == null ? null: (Collection<GrantedAuthority>) authentication.getAuthorities();
         assert grantedAuthorities != null;
         Set<String> groups =  grantedAuthorities.stream().map(GrantedAuthority::getAuthority).collect(Collectors.toSet());
+        logger.info(groups);
         
         logger.info(request.getRequestURI() + ", " + request.getQueryString());
         logger.info(body);
@@ -429,7 +464,6 @@ public class ProxyService {
         Get a policy by name
          */
         Gson gsonBuilder = new GsonBuilder().setDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ").setPrettyPrinting().create();
-        RangerClient rangerClient = new RangerClient(rangerHostName, rangerAuthType, rangerUserName, rangerPassword, null);
         RangerPolicy fetchedPolicy = null;
         String policyName = userName + "_" +  resourceType;
         try {
@@ -485,7 +519,6 @@ public class ProxyService {
         Get a policy by name
          */
         Gson gsonBuilder = new GsonBuilder().setDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ").setPrettyPrinting().create();
-        RangerClient rangerClient = new RangerClient(rangerHostName, rangerAuthType, rangerUserName, rangerPassword, null);
         RangerPolicy fetchedPolicy;
         String policyName = userName + "_" +  resourceType;
         try {
@@ -561,7 +594,7 @@ public class ProxyService {
         headers.put(HttpHeaders.CONTENT_TYPE, contentTypes);
         return ResponseEntity.status(403)
                 .headers(headers)
-                .body("{\"error_code\": \"UNAUTHORISED\", \"message\": \"You do not have permissions to access this resource\"}");
+                .body("{\"detail\": \"You do not have permissions to access this resource\"}");
     }
 
     private String getValFromQueryString(String queryString, String name){

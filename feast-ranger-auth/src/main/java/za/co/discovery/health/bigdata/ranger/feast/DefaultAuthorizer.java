@@ -22,6 +22,7 @@ package za.co.discovery.health.bigdata.ranger.feast;
 import org.apache.ranger.plugin.audit.RangerDefaultAuditHandler;
 import org.apache.ranger.plugin.policyengine.*;
 import org.apache.ranger.plugin.service.RangerBasePlugin;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.util.*;
 
@@ -84,6 +85,9 @@ public class DefaultAuthorizer implements IAuthorizer {
         ListRequestAccessTypeMap.put("saved_dataset", "list_saved_dataset");
     }
 
+    @Value("{ldap.service-principal}")
+    private String ldapKerberosPrincipal;
+
     public DefaultAuthorizer() {
 
     }
@@ -93,7 +97,7 @@ public class DefaultAuthorizer implements IAuthorizer {
         if (plugin == null) {
             synchronized (DefaultAuthorizer.class) {
                 if (plugin == null) {
-                    plugin = new RangerBasePlugin("feast", "feast");
+                    plugin = new RangerBasePlugin("feast", "cm_feast");
 
                     plugin.setResultProcessor(new RangerDefaultAuditHandler(plugin.getConfig()));
                     plugin.init();
@@ -205,12 +209,14 @@ public class DefaultAuthorizer implements IAuthorizer {
             );
         });
         Collection<RangerAccessResult> accessResults = plugin.isAccessAllowed(requests);
-        accessResults.forEach(accessResult ->
-                results.put(
-                    accessResult.getAccessRequest().getResource().getValue(resourceType).toString(),
-                    accessResult.getIsAllowed()
-                )
-        );
+        if(accessResults != null) {
+            accessResults.forEach(accessResult ->
+                    results.put(
+                            accessResult.getAccessRequest().getResource().getValue(resourceType).toString(),
+                            accessResult.getIsAllowed()
+                    )
+            );
+        }
         return results;
     }
 

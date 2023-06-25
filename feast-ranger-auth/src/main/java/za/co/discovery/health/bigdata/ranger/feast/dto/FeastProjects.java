@@ -6,7 +6,7 @@ import java.util.List;
 public class FeastProjects implements Serializable {
     private List<String> strings;
 
-    List<String> getStrings() {
+    public List<String> getStrings() {
         return this.strings;
     }
 

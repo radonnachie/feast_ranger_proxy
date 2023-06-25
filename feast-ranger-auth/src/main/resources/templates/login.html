@@ -14,9 +14,9 @@
     <img src="https://github.com/feast-dev/feast/blob/master/docs/assets/feast_logo.png">
 
     <div>
-        <form class="form-signin"  method="post" action="/login">
+        <form class="form-signin"  method="post" th:action="@{/login}">
 
-            <h3 class="form-signin-heading">Please sign in to Mlflow</h3>
+            <h3 class="form-signin-heading" style="color: white">Please sign in to FEAST</h3>
             <p>
                 <label for="username" class="sr-only">Username</label>
                 <input type="text" id="username" name="username" class="form-control" placeholder="Username" required autofocus>
@@ -32,5 +32,11 @@
             <button class="btn btn-lg btn-primary btn-block" type="submit">Sign in</button>
         </form>
     </div>
+
+<!--    <form th:action="@{/login}" method="post">-->
+<!--        <div><label> User Name : <input type="text" name="username"/> </label></div>-->
+<!--        <div><label> Password: <input type="password" name="password"/> </label></div>-->
+<!--        <div><input type="submit" value="Sign In"/></div>-->
+<!--    </form>-->
 </div>
 </body></html>

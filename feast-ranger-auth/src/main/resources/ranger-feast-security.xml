@@ -19,7 +19,7 @@
 <configuration xmlns:xi="http://www.w3.org/2001/XInclude">
     <property>
         <name>ranger.plugin.feast.policy.rest.url</name>
-        <value>http://172.16.0.86:6080</value>
+        <value>http://192.168.47.128:6080</value>
         <description>
             URL to Ranger Admin
         </description>
@@ -27,7 +27,7 @@
 
     <property>
         <name>ranger.plugin.feast.service.name</name>
-        <value>ross_feast</value>
+        <value>cm_feast</value>
         <description>
             Name of the Ranger service containing policies for this feast instance
         </description>
@@ -43,7 +43,7 @@
 
     <property>
         <name>ranger.plugin.feast.policy.rest.ssl.config.file</name>
-        <value>ranger-policymgr-ssl.xml</value>
+        <value>ranger-feast-policymgr-ssl.xml</value>
         <description>
             Path to the file containing SSL details to contact Ranger Admin
         </description>
@@ -51,7 +51,7 @@
 
     <property>
         <name>ranger.plugin.feast.policy.pollIntervalMs</name>
-        <value>5000</value>
+        <value>50000</value>
         <description>
             How often to poll for changes in policies?
         </description>

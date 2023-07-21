@@ -19,50 +19,65 @@
 
 package za.co.discovery.health.bigdata.ranger.feast;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 interface IAuthorizer {
+    public static enum AccessType {
+        CREATE,
+        MODIFY,
+        DELETE,
+        READ
+    }
+
+    public static Map<AccessType, String> AccessTypeMap = new HashMap<>();
+
     void init();
 
-    boolean authorizePostRequest(
-        String project,
-        String resourceType,
-        String name,
-        String user,
-        Set<String> userGroups
+    boolean authorize(
+            AccessType accessType,
+            String resourceType,
+            String resourceUri,
+            String user,
+            Set<String> userGroups
     );
 
-    boolean authorizeDeleteRequest(
-        String project,
-        String resourceType,
-        String name,
-        String user,
-        Set<String> userGroups
+    boolean authorizeRegistryAccess(
+            AccessType accessType,
+            String user,
+            Set<String> userGroups
     );
 
-    boolean authorizeGetRequest(
-        String project,
-        String resourceType,
-        String name,
-        String user,
-        Set<String> userGroups
+    boolean authorizeProjectAccess(
+            AccessType accessType,
+            String project,
+            String user,
+            Set<String> userGroups
     );
 
-    Map<String, Boolean> authorizeListRequest(
-        String project,
-        String resourceType,
-        List<String> names,
-        String user,
-        Set<String> userGroups
+    boolean authorizeResourceAccess(
+            AccessType accessType,
+            String project,
+            String resourceType,
+            String resourceName,
+            String user,
+            Set<String> userGroups
     );
-    
-    boolean authorizeGetProjectRequest(
-        String project,
-        String resourceType,
-        String user,
-        Set<String> userGroups
+
+    Map<String, Boolean> authorizeProjectResourceListAccess(
+            String project,
+            String resourceType,
+            List<String> names,
+            String user,
+            Set<String> userGroups
+    );
+
+    Map<String, Boolean> authorizeRegistryProjectListAccess(
+            List<String> projects,
+            String user,
+            Set<String> userGroups
     );
 
     void refresh();

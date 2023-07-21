@@ -38,6 +38,8 @@ import java.io.IOException;
 @EnableWebSecurity
 public class WebSecurityConfig {
 
+    private static final boolean debug = false;
+
     private static final String FEAST_ROLE = "Feast-users";
     @Value("${app.ad-domain}")
     private String adDomain;
@@ -86,11 +88,11 @@ public class WebSecurityConfig {
 
                 .authorizeHttpRequests((authz) -> authz
 
-                        .antMatchers(STATIC_RESOURCES).permitAll()
-                        .antMatchers("/ajax-api/**").hasAuthority(FEAST_ROLE)
-                        .antMatchers("/api/**").hasAuthority(FEAST_ROLE)
-                        .antMatchers("/**").hasAuthority(FEAST_ROLE)
-                        .anyRequest().authenticated()
+                    .antMatchers(STATIC_RESOURCES).permitAll()
+                    .antMatchers("/ajax-api/**").hasAuthority(FEAST_ROLE)
+                    .antMatchers("/api/**").hasAuthority(FEAST_ROLE)
+                    .antMatchers("/**").hasAuthority(FEAST_ROLE)
+                    .anyRequest().authenticated()
 
                 )
                 .exceptionHandling()
@@ -163,7 +165,7 @@ public class WebSecurityConfig {
         SunJaasKerberosTicketValidator ticketValidator = new SunJaasKerberosTicketValidator();
         ticketValidator.setServicePrincipal(servicePrincipal);
         ticketValidator.setKeyTabLocation(new FileSystemResource(keytabLocation));
-        ticketValidator.setDebug(true);
+        ticketValidator.setDebug(debug);
         return ticketValidator;
     }
 
@@ -181,7 +183,7 @@ public class WebSecurityConfig {
         loginConfig.setServicePrincipal(ldapKerberosPrincipal);
 
         //loginConfig.setUseTicketCache(true);
-        loginConfig.setDebug(true);
+        loginConfig.setDebug(debug);
         loginConfig.setIsInitiator(true);
         loginConfig.afterPropertiesSet();
         return loginConfig;
@@ -208,7 +210,7 @@ public class WebSecurityConfig {
 
         GlobalSunJaasKerberosConfig config = new GlobalSunJaasKerberosConfig();
         config.setKrbConfLocation("C:\\Users\\radonn\\Work\\environments\\feast\\feast-ranger\\feast-ranger-auth\\src\\main\\resources\\krb5.conf");
-        config.setDebug(true);
+        config.setDebug(debug);
         config.afterPropertiesSet();
         return config;
     }

@@ -27,66 +27,19 @@ import org.springframework.beans.factory.annotation.Value;
 import java.util.*;
 
 public class DefaultAuthorizer implements IAuthorizer {
-    public static Map<String, String> PostRequestAccessTypeMap;
-    public static Map<String, String> DeleteRequestAccessTypeMap;
-    public static Map<String, String> GetRequestAccessTypeMap;
-    public static Map<String, String> ListRequestAccessTypeMap;
+
     static {
-        PostRequestAccessTypeMap = new HashMap<>();
-        PostRequestAccessTypeMap.put("entity", "modify_entity");
-        PostRequestAccessTypeMap.put("data_source", "modify_data_source");
-        PostRequestAccessTypeMap.put("feature_service", "modify_feature_service");
-        PostRequestAccessTypeMap.put("feature_view", "modify_feature_view");
-        PostRequestAccessTypeMap.put("stream_feature_view", "modify_stream_feature_view");
-        PostRequestAccessTypeMap.put("on_demand_feature_view", "modify_on_demand_feature_view");
-        PostRequestAccessTypeMap.put("request_feature_view", "modify_request_feature_view");
-        PostRequestAccessTypeMap.put("validation_reference", "modify_validation_reference");
-        PostRequestAccessTypeMap.put("saved_dataset", "modify_saved_dataset");
-        PostRequestAccessTypeMap.put("managed_infra", "modify_managed_infra");
-        PostRequestAccessTypeMap.put("feature_view_user_metadata", "modify_feature_view_user_metadata");
-        PostRequestAccessTypeMap.put("stream_feature_view_user_metadata", "modify_stream_feature_view_user_metadata");
-        PostRequestAccessTypeMap.put("on_demand_feature_view_user_metadata", "modify_on_demand_feature_view_user_metadata");
-        PostRequestAccessTypeMap.put("request_feature_view_user_metadata", "modify_request_feature_view_user_metadata");
-
-        DeleteRequestAccessTypeMap = new HashMap<>();
-        DeleteRequestAccessTypeMap.put("entity", "delete_entity");
-        DeleteRequestAccessTypeMap.put("data_source", "delete_data_source");
-        DeleteRequestAccessTypeMap.put("feature_service", "delete_feature_service");
-        DeleteRequestAccessTypeMap.put("feature_view", "delete_feature_view");
-        DeleteRequestAccessTypeMap.put("validation_reference", "delete_validation_reference");
-        DeleteRequestAccessTypeMap.put("teardown", "delete");
-
-        GetRequestAccessTypeMap = new HashMap<>();
-        GetRequestAccessTypeMap.put("entity", "get_entity");
-        GetRequestAccessTypeMap.put("data_source", "get_data_source");
-        GetRequestAccessTypeMap.put("feature_service", "get_feature_service");
-        GetRequestAccessTypeMap.put("feature_view", "get_feature_view");
-        GetRequestAccessTypeMap.put("stream_feature_view", "get_stream_feature_view");
-        GetRequestAccessTypeMap.put("on_demand_feature_view", "get_on_demand_feature_view");
-        GetRequestAccessTypeMap.put("request_feature_view", "get_request_feature_view");
-        GetRequestAccessTypeMap.put("validation_reference", "get_validation_reference");
-        GetRequestAccessTypeMap.put("saved_dataset", "get_saved_dataset");
-        GetRequestAccessTypeMap.put("managed_infra", "get_managed_infra");
-        GetRequestAccessTypeMap.put("feature_view_user_metadata", "get_feature_view_user_metadata");
-        GetRequestAccessTypeMap.put("stream_feature_view_user_metadata", "get_stream_feature_view_user_metadata");
-        GetRequestAccessTypeMap.put("on_demand_feature_view_user_metadata", "get_on_demand_feature_view_user_metadata");
-        GetRequestAccessTypeMap.put("request_feature_view_user_metadata", "get_request_feature_view_user_metadata");
-        GetRequestAccessTypeMap.put("project_metadata", "get_project_metadata");
-
-        ListRequestAccessTypeMap = new HashMap<>();
-        ListRequestAccessTypeMap.put("entity", "list_entity");
-        ListRequestAccessTypeMap.put("data_source", "list_data_source");
-        ListRequestAccessTypeMap.put("feature_service", "list_feature_service");
-        ListRequestAccessTypeMap.put("feature_view", "list_feature_view");
-        ListRequestAccessTypeMap.put("stream_feature_view", "list_stream_feature_view");
-        ListRequestAccessTypeMap.put("on_demand_feature_view", "list_on_demand_feature_view");
-        ListRequestAccessTypeMap.put("request_feature_view", "list_request_feature_view");
-        ListRequestAccessTypeMap.put("validation_reference", "list_validation_reference");
-        ListRequestAccessTypeMap.put("saved_dataset", "list_saved_dataset");
+        AccessTypeMap.put(AccessType.CREATE, "create");
+        AccessTypeMap.put(AccessType.MODIFY, "modify");
+        AccessTypeMap.put(AccessType.DELETE, "delete");
+        AccessTypeMap.put(AccessType.READ, "read");
     }
 
     @Value("{ldap.service-principal}")
     private String ldapKerberosPrincipal;
+
+    @Value("{feast.url}")
+    private String feastRegistryUrl;
 
     public DefaultAuthorizer() {
 
@@ -111,82 +64,74 @@ public class DefaultAuthorizer implements IAuthorizer {
     }
 
     @Override
-    public boolean authorizePostRequest(
+    public boolean authorizeResourceAccess(
+        AccessType accessType,
         String project,
         String resourceType,
-        String name,
+        String resourceName,
         String user,
         Set<String> userGroups
     ) {
         return authorize(
-            PostRequestAccessTypeMap.get(resourceType),
+            accessType,
             resourceType,
-            String.format("%s/%s/%s", project, resourceType, name), // resource uri
+            String.format("%s/%s/%s", project, resourceType, resourceName),
+            user,
+            userGroups
+        ) || authorizeProjectAccess(
+            accessType == AccessType.READ ? AccessType.READ : AccessType.MODIFY,
+            project,
             user,
             userGroups
         );
     }
 
     @Override
-    public boolean authorizeDeleteRequest(
+    public boolean authorizeProjectAccess(
+        AccessType accessType,
         String project,
-        String resourceType,
-        String name,
         String user,
         Set<String> userGroups
     ) {
         return authorize(
-            DeleteRequestAccessTypeMap.get(resourceType),
-            resourceType,
-            String.format("%s/%s/%s", project, resourceType, name), // resource uri
+            accessType,
+            "project",
+            project,
+            user,
+            userGroups
+        ) || authorizeRegistryAccess(
+            accessType == AccessType.READ ? AccessType.READ : AccessType.MODIFY,
             user,
             userGroups
         );
     }
 
     @Override
-    public boolean authorizeGetRequest(
-        String project,
-        String resourceType,
-        String name,
+    public boolean authorizeRegistryAccess(
+        AccessType accessType,
         String user,
         Set<String> userGroups
     ) {
         return authorize(
-            PostRequestAccessTypeMap.get(resourceType),
-            resourceType,
-            String.format("%s/%s/%s", project, resourceType, name), // resource uri
+            accessType,
+            "registry",
+            feastRegistryUrl,
             user,
             userGroups
         );
     }
 
     @Override
-    public boolean authorizeGetProjectRequest(
-        String project,
-        String resourceType,
-        String user,
-        Set<String> userGroups
-    ) {
-        return authorize(
-            GetRequestAccessTypeMap.get("project_metadata"),
-            resourceType,
-            String.format("%s/%s", project, resourceType), // resource uri
-            user,
-            userGroups
-        );
-    }
-
-    public boolean authorize(String accessType, String resourceType, String artifact, String user, Set<String> userGroups) {
+    public boolean authorize(AccessType accessType, String resourceType, String resourceUri, String user, Set<String> userGroups) {
         RangerAccessResourceImpl resource = new RangerAccessResourceImpl();
-        resource.setValue(resourceType, artifact);
-        RangerAccessRequest request = new RangerAccessRequestImpl(resource, accessType, user, userGroups, null);
+        resource.setValue(resourceType, resourceUri);
+        RangerAccessRequest request = new RangerAccessRequestImpl(resource, AccessTypeMap.get(accessType), user, userGroups, null);
         RangerAccessResult result = plugin.isAccessAllowed(request);
         return result != null && result.getIsAllowed();
     }
 
     @Override
-    public Map<String, Boolean> authorizeListRequest(
+    public Map<String, Boolean> authorizeProjectResourceListAccess(
         String project,
         String resourceType,
         List<String> names,
@@ -194,14 +139,31 @@ public class DefaultAuthorizer implements IAuthorizer {
         Set<String> userGroups
     ) {
         final Map<String, Boolean> results = new HashMap<>();
+
+        if (authorizeProjectAccess(
+            AccessType.READ,
+            project,
+            user,
+            userGroups
+        )) {
+            names.forEach(name -> {
+                results.put(
+                    name,
+                    true
+                );
+            });
+            return results;
+        }
+
+        final String resourceTypeAccess = AccessTypeMap.get(AccessType.READ);
         List<RangerAccessRequest> requests = new ArrayList<>();
         names.forEach(name -> {
             RangerAccessResourceImpl resource = new RangerAccessResourceImpl();
-            resource.setValue(resourceType, name);
+            resource.setValue(resourceType, String.format("%s/%s/%s", project, resourceType, name));
             requests.add(
                 new RangerAccessRequestImpl(
                     resource,
-                    ListRequestAccessTypeMap.get("resourceType"),
+                    resourceTypeAccess,
                     user,
                     userGroups,
                     null
@@ -211,10 +173,59 @@ public class DefaultAuthorizer implements IAuthorizer {
         Collection<RangerAccessResult> accessResults = plugin.isAccessAllowed(requests);
         if(accessResults != null) {
             accessResults.forEach(accessResult ->
-                    results.put(
-                            accessResult.getAccessRequest().getResource().getValue(resourceType).toString(),
-                            accessResult.getIsAllowed()
-                    )
+                results.put(
+                    accessResult.getAccessRequest().getResource().getValue(resourceType).toString(),
+                    accessResult.getIsAllowed()
+                )
+            );
+        }
+        return results;
+    }
+
+    @Override
+    public Map<String, Boolean> authorizeRegistryProjectListAccess(
+            List<String> projects,
+            String user,
+            Set<String> userGroups
+    ) {
+        final Map<String, Boolean> results = new HashMap<>();
+
+        if (authorizeRegistryAccess(
+                AccessType.READ,
+                user,
+                userGroups
+        )) {
+            projects.forEach(project -> {
+                results.put(
+                    project,
+                    true
+                );
+            });
+            return results;
+        }
+
+        final String resourceTypeAccess = AccessTypeMap.get(AccessType.READ);
+        List<RangerAccessRequest> requests = new ArrayList<>();
+        projects.forEach(project -> {
+            RangerAccessResourceImpl resource = new RangerAccessResourceImpl();
+            resource.setValue("project", project);
+            requests.add(
+                new RangerAccessRequestImpl(
+                    resource,
+                    resourceTypeAccess,
+                    user,
+                    userGroups,
+                    null
+                )
+            );
+        });
+        Collection<RangerAccessResult> accessResults = plugin.isAccessAllowed(requests);
+        if(accessResults != null) {
+            accessResults.forEach(accessResult ->
+                results.put(
+                    accessResult.getAccessRequest().getResource().getValue("project").toString(),
+                    accessResult.getIsAllowed()
+                )
             );
         }
         return results;

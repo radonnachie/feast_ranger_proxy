@@ -26,9 +26,4 @@ public class FeastResourceProtos implements Serializable {
         this.protostrings = protostrings;
     }
 
-    public Map<String, String> getNameProtostringMap() {
-        return IntStream.range(0, this.names.size())
-            .boxed()
-            .collect(Collectors.toMap(this.names::get, this.protostrings::get));
-    }
 }

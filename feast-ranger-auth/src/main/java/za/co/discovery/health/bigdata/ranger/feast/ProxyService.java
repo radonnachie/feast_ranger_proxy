@@ -9,17 +9,11 @@ import org.apache.logging.log4j.ThreadContext;
 import org.apache.ranger.RangerClient;
 import org.apache.ranger.RangerServiceException;
 import org.apache.ranger.plugin.model.RangerPolicy;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
-import org.springframework.retry.annotation.Backoff;
-import org.springframework.retry.annotation.Recover;
-import org.springframework.retry.annotation.Retryable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.stereotype.Service;
-import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -31,17 +25,13 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 
 public class ProxyService {
     HttpComponentsClientHttpRequestFactory httpRequestFactory;
 
     private final String feastUrl;
-    private final String rangerHostName;
-    private final String rangerAuthType;
-    private final String rangerKeytab;
-    private final String rangerUserName;
-    private final String rangerPassword;
     private final String rangerServiceName;
 
     private final IAuthorizer authorizer;
@@ -62,30 +52,25 @@ public class ProxyService {
 
     ){
         this.feastUrl = feastUrl;
-        this.rangerHostName = rangerHostName;
-        this.rangerAuthType = rangerAuthType;
-        this.rangerKeytab = rangerKeytab;
-        this.rangerUserName = rangerUserName;
-        this.rangerPassword = rangerPassword;
         this.rangerServiceName = rangerServiceName;
         this.authorizer = authorizer;
         this.httpRequestFactory = httpRequestFactory;
 
         if(rangerAuthType.equals("kerberos")){
             this.rangerClient = new RangerClient(
-                    rangerHostName,
-                    rangerAuthType,
-                    rangerUserName,
-                    rangerKeytab,
-                    null
+                rangerHostName,
+                rangerAuthType,
+                rangerUserName,
+                rangerKeytab,
+                null
             );
         }else{
             this.rangerClient = new RangerClient(
-                    rangerHostName,
-                    rangerAuthType,
-                    rangerUserName,
-                    rangerPassword,
-                    null
+                rangerHostName,
+                rangerAuthType,
+                rangerUserName,
+                rangerPassword,
+                null
             );
         }
     }
@@ -107,19 +92,49 @@ public class ProxyService {
         HttpServletResponse response,
         String traceId
     ) throws URISyntaxException, HttpStatusCodeException {
-        return buildProxiedResponse(body, method,  request,  response,  traceId, FeastProjects.class);
-    }
+        ThreadContext.put("traceId", traceId);
 
-    public ResponseEntity<?> processGetResources(
-        String body,
-        HttpMethod method,
-        HttpServletRequest request,
-        HttpServletResponse response,
-        String traceId
-    ) throws URISyntaxException, HttpStatusCodeException {
-        // TODO authorise
-        String accessType = "read";
-        return buildProxiedResponse(body, method,  request,  response,  traceId, FeastResources.class);
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String user = authentication == null ? null: authentication.getName();
+        if(user != null){
+            user = user.split("@")[0];
+        }
+        Collection<GrantedAuthority> grantedAuthorities = authentication == null ? null: (Collection<GrantedAuthority>) authentication.getAuthorities();
+        assert grantedAuthorities != null;
+        Set<String> groups =  grantedAuthorities.stream().map(GrantedAuthority::getAuthority).collect(Collectors.toSet());
+
+        logger.info(request.getRequestURI() + ", " + request.getQueryString());
+        logger.info(body);
+
+        ResponseEntity<FeastProjects> projects_response = buildProxiedResponse(body, method,  request,  response,  traceId, FeastProjects.class);
+        if(projects_response == null || projects_response.getStatusCode() != HttpStatus.OK){
+            return null;
+        }
+        FeastProjects projects = Objects.requireNonNull(projects_response.getBody());
+        List<String> projectNames = projects.getStrings();
+
+        Map<String, Boolean> items = authorizer.authorizeRegistryProjectListAccess(
+            projectNames,
+            user,
+            groups
+        );
+
+        projects.setStrings(
+            projectNames.stream()
+            .filter(
+                projectName -> items.containsKey(projectName) && items.get(projectName)
+            )
+            .collect(Collectors.toList())
+        );
+
+        HttpHeaders headers = new HttpHeaders();
+        List<String> contentTypes = new ArrayList<>();
+        contentTypes.add(ContentType.APPLICATION_JSON.toString());
+        headers.put(HttpHeaders.CONTENT_TYPE, contentTypes);
+        return (ResponseEntity<FeastProjects>) ResponseEntity
+            .status(projects_response.getStatusCode())
+            .headers(headers)
+            .body(projects);
     }
 
     public ResponseEntity<?> processDeleteTeardown(
@@ -129,7 +144,24 @@ public class ProxyService {
         HttpServletResponse response,
         String traceId
     ) throws URISyntaxException, HttpStatusCodeException {
-        // TODO authorise
+        ThreadContext.put("traceId", traceId);
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String user = authentication == null ? null: authentication.getName();
+        if(user != null){
+            user = user.split("@")[0];
+        }
+        Collection<GrantedAuthority> grantedAuthorities = authentication == null ? null: (Collection<GrantedAuthority>) authentication.getAuthorities();
+        assert grantedAuthorities != null;
+        Set<String> groups =  grantedAuthorities.stream().map(GrantedAuthority::getAuthority).collect(Collectors.toSet());
+
+        if (authorizer.authorizeRegistryAccess(
+            IAuthorizer.AccessType.DELETE, // delete project within the registry
+            user,
+            groups
+        )) {
+            return buildProxiedResponse(body, method,  request,  response,  traceId, String.class);
+        }
         return buildUnauthorisedResponse(request);
     }
 
@@ -155,17 +187,67 @@ public class ProxyService {
         Set<String> groups =  grantedAuthorities.stream().map(
                 item -> item.getAuthority().toLowerCase()
         ).collect(Collectors.toSet());
-        
-        logger.info(request.getRequestURI() + ", " + request.getQueryString());
-        logger.info(body);
-        if (authorizer.authorizePostRequest(
-            project,
-            resource,
-            name,
-            user,
-            groups
-        )) {
+
+        // determine 'put' or 'patch' (i.e. whether or not the resource already exists)
+        URI uri = UriComponentsBuilder.fromHttpUrl(feastUrl)
+            .path(project)
+            .queryParam("resource", resource)
+            .queryParam("name", name)
+            .build(true).toUri();
+        HttpEntity<String> httpEntity = new HttpEntity<>(body, new HttpHeaders());
+        RestTemplate restTemplate = new RestTemplate(this.httpRequestFactory);
+        ResponseEntity<FeastResourceProto> serverResponse = restTemplate.exchange(uri, method, httpEntity, FeastResourceProto.class);
+
+        boolean authorized = false;
+        if (serverResponse.getStatusCode() == HttpStatus.OK) {
+            authorized = authorizer.authorizeResourceAccess( // modify existing resource
+                IAuthorizer.AccessType.MODIFY,
+                project,
+                resource,
+                name,
+                user,
+                groups
+            );
+        } else if (serverResponse.getStatusCode() == HttpStatus.NOT_FOUND) {
+            authorized = authorizer.authorizeProjectAccess(
+                IAuthorizer.AccessType.CREATE, // create resource within the project
+                project,
+                user,
+                groups
+            );
+            if (authorized) {
+                try {
+                    createResourcePolicy(
+                        user,
+                        resource,
+                        String.format("%s/%s/%s", project, resource, name),
+                        new HashSet<>(Arrays.asList(
+                            IAuthorizer.AccessType.CREATE,
+                            IAuthorizer.AccessType.MODIFY,
+                            IAuthorizer.AccessType.DELETE,
+                            IAuthorizer.AccessType.READ
+                        ))
+                    );
+                } catch (RangerServiceException e) {
+                    logger.error(e);
+                    return buildErrorResponse(
+                        request,
+                        e
+                    );
+                }
+            }
+        } else {
+            return buildErrorResponse(
+                request,
+                new RuntimeException(
+                    "Feast response code was neither 200 nor 404: " + serverResponse.getStatusCode().toString()
+                )
+            );
+        }
+
+        if (authorized) {
             return buildProxiedResponse(body, method,  request,  response,  traceId, String.class);
+            // TODO handle non-200 authorized response...
         }
         return buildUnauthorisedResponse(request);
     }
@@ -193,13 +275,21 @@ public class ProxyService {
         
         logger.info(request.getRequestURI() + ", " + request.getQueryString());
         logger.info(body);
-        if (authorizer.authorizeDeleteRequest(
-            project,
-            resource,
-            name,
-            user,
-            groups
+        if (authorizer.authorizeResourceAccess(
+                IAuthorizer.AccessType.DELETE, // delete existing resource
+                project,
+                resource,
+                name,
+                user,
+                groups
         )) {
+            try {
+                removeResourcePolicy(
+                        String.format("%s/%s/%s", project, resource, name)
+                );
+            } catch (RangerServiceException e) {
+                logger.error(e);
+            }
             return buildProxiedResponse(body, method,  request,  response,  traceId, FeastResourceDeletionCount.class);
         }
         return buildUnauthorisedResponse(request);
@@ -228,10 +318,9 @@ public class ProxyService {
         assert grantedAuthorities != null;
         Set<String> groups =  grantedAuthorities.stream().map(GrantedAuthority::getAuthority).collect(Collectors.toSet());
         logger.info(groups);
-        
-        logger.info(request.getRequestURI() + ", " + request.getQueryString());
-        logger.info(body);
-        if (authorizer.authorizeGetRequest(
+
+        if (authorizer.authorizeResourceAccess(
+            IAuthorizer.AccessType.READ,
             project,
             resource,
             name,
@@ -266,13 +355,14 @@ public class ProxyService {
         logger.info(request.getRequestURI() + ", " + request.getQueryString());
         logger.info(body);
 
-        ResponseEntity<FeastResourceProtos> resources = buildProxiedResponse(body, method,  request,  response,  traceId, FeastResourceProtos.class);
-        if(resources == null || resources.getStatusCode() != HttpStatus.OK){
+        ResponseEntity<FeastResourceProtos> resources_response = buildProxiedResponse(body, method,  request,  response,  traceId, FeastResourceProtos.class);
+        if(resources_response == null || resources_response.getStatusCode() != HttpStatus.OK){
             return null;
         }
-        List<String> names = Objects.requireNonNull(resources.getBody()).getNames();
+        FeastResourceProtos resources = Objects.requireNonNull(resources_response.getBody());
+        List<String> names = resources.getNames();
 
-        Map<String, Boolean> items = authorizer.authorizeListRequest(
+        Map<String, Boolean> items = authorizer.authorizeProjectResourceListAccess(
             project,
             resource,
             names,
@@ -280,8 +370,15 @@ public class ProxyService {
             groups
         );
 
-        Map<String, String> nameProtostringMap = resources.getBody().getNameProtostringMap();
-        resources.getBody().setNames(
+        Map<String, String> nameProtostringMap = IntStream
+            .range(0, resources.getNames().size())
+            .boxed()
+            .collect(Collectors.toMap(
+                resources.getNames()::get,
+                resources.getProtostrings()::get
+            )
+        );
+        resources.setNames(
             nameProtostringMap.entrySet().stream()
                 .filter(
                     kv ->
@@ -290,48 +387,22 @@ public class ProxyService {
                 .map(kv -> kv.getKey())
                 .collect(Collectors.toList())
         );
-        resources.getBody().setProtostrings(
-            resources.getBody().getNames().stream()
+        resources.setProtostrings(
+            resources.getNames().stream()
                 .map(
-                    name ->
-                        nameProtostringMap.get(name)
+                        nameProtostringMap::get
                 )
                 .collect(Collectors.toList())
         );
 
-        return resources;
-    }
-
-    public ResponseEntity<?> processGetProjectLastUpdated(
-        String project,
-        String body,
-        HttpMethod method,
-        HttpServletRequest request,
-        HttpServletResponse response,
-        String traceId
-    ) throws URISyntaxException, HttpStatusCodeException {
-        ThreadContext.put("traceId", traceId);
-
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String user = authentication == null ? null: authentication.getName();
-        if(user != null){
-            user = user.split("@")[0];
-        }
-        Collection<GrantedAuthority> grantedAuthorities = authentication == null ? null: (Collection<GrantedAuthority>) authentication.getAuthorities();
-        assert grantedAuthorities != null;
-        Set<String> groups =  grantedAuthorities.stream().map(GrantedAuthority::getAuthority).collect(Collectors.toSet());
-
-        logger.info(request.getRequestURI() + ", " + request.getQueryString());
-        logger.info(body);
-        if (authorizer.authorizeGetProjectRequest(
-            project,
-            "last_updated",
-            user,
-            groups
-        )) {
-            return buildProxiedResponse(body, method,  request,  response,  traceId, FeastResourceLastUpdatedDatetime.class);
-        }
-        return buildUnauthorisedResponse(request);
+        HttpHeaders headers = new HttpHeaders();
+        List<String> contentTypes = new ArrayList<>();
+        contentTypes.add(ContentType.APPLICATION_JSON.toString());
+        headers.put(HttpHeaders.CONTENT_TYPE, contentTypes);
+        return (ResponseEntity<FeastResourceProtos>) ResponseEntity
+                .status(resources_response.getStatusCode())
+                .headers(headers)
+                .body(resources);
     }
 
     public ResponseEntity<?> processPostProjectUserMetadata(
@@ -355,11 +426,14 @@ public class ProxyService {
         assert grantedAuthorities != null;
         Set<String> groups =  grantedAuthorities.stream().map(GrantedAuthority::getAuthority).collect(Collectors.toSet());
 
+        // TODO breakup into create/modify on String.format("%s_user_metadata", resource),
+
         logger.info(request.getRequestURI() + ", " + request.getQueryString());
         logger.info(body);
-        if (authorizer.authorizePostRequest(
+        if (authorizer.authorizeResourceAccess(
+            IAuthorizer.AccessType.MODIFY,
             project,
-            String.format("%s_user_metadata", resource),
+            resource,
             name,
             user,
             groups
@@ -392,9 +466,10 @@ public class ProxyService {
 
         logger.info(request.getRequestURI() + ", " + request.getQueryString());
         logger.info(body);
-        if (authorizer.authorizeGetRequest(
+        if (authorizer.authorizeResourceAccess(
+            IAuthorizer.AccessType.READ,
             project,
-            String.format("%s_user_metadata", resource),
+            resource,
             name,
             user,
             groups
@@ -404,7 +479,7 @@ public class ProxyService {
         return buildUnauthorisedResponse(request);
     }
 
-    public ResponseEntity<?> processGetProjectFeastMetadata(
+    public ResponseEntity<?> processGetProjectDetail(
         String project,
         String body,
         HttpMethod method,
@@ -425,9 +500,9 @@ public class ProxyService {
 
         logger.info(request.getRequestURI() + ", " + request.getQueryString());
         logger.info(body);
-        if (authorizer.authorizeGetProjectRequest(
+        if (authorizer.authorizeProjectAccess(
+            IAuthorizer.AccessType.READ,
             project,
-            "feast_metadata",
             user,
             groups
         )) {
@@ -436,110 +511,41 @@ public class ProxyService {
         return buildUnauthorisedResponse(request);
     }
 
+    private void createResourcePolicy(
+        String userName,
+        String resourceType,
+        String resourceUri,
+        Set<IAuthorizer.AccessType> accessTypes
+    ) throws RangerServiceException {
+        String policyName = resourceUri;
+        // create policy
+        // TODO set group of new policy
+        Map<String, RangerPolicy.RangerPolicyResource> resource = Collections.singletonMap(
+            resourceType,
+            new RangerPolicy.RangerPolicyResource(Collections.singletonList(resourceUri),false,false)
+        );
+        RangerPolicy policy = new RangerPolicy();
+        policy.setService(rangerServiceName);
+        policy.setName(policyName);
+        policy.setResources(resource);
+        RangerPolicy.RangerPolicyItem policyItem = new RangerPolicy.RangerPolicyItem();
+        policyItem.setUsers(Collections.singletonList(userName));
+        List<RangerPolicy.RangerPolicyItemAccess> accesses = new ArrayList<>();
+        for (IAuthorizer.AccessType accessType: accessTypes) {
+            accesses.add(new RangerPolicy.RangerPolicyItemAccess(authorizer.AccessTypeMap.get(accessType)));
+        }
+        policyItem.setAccesses(accesses);
+        policy.setPolicyItems(Collections.singletonList(policyItem));
 
-    // @Retryable(
-    //     exclude = {
-    //         HttpStatusCodeException.class
-    //     },
-    //     include = Exception.class,
-    //     backoff = @Backoff(
-    //         delay = 5000,
-    //         multiplier = 4.0
-    //     ),
-    //     maxAttempts = 4
-    // )
-
-    private HttpHeaders getHttpHeaders() {
-        HttpHeaders headers = new HttpHeaders();
-        headers.forEach((name, val) -> {
-            if(!name.equals(HttpHeaders.CONTENT_LENGTH)){
-                headers.put(name, val);
-            }
-        });
-        return headers;
-    }
-
-    private void updatePolicy(String userName, String resourceName, String resourceType){
-         /*
-        Get a policy by name
-         */
+        RangerPolicy createdPolicy = rangerClient.createPolicy(policy);
         Gson gsonBuilder = new GsonBuilder().setDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ").setPrettyPrinting().create();
-        RangerPolicy fetchedPolicy = null;
-        String policyName = userName + "_" +  resourceType;
-        try {
-            fetchedPolicy = rangerClient.getPolicy(rangerServiceName, policyName);
-        } catch (RangerServiceException e) {
-            logger.error(e);
-        }
-        try {
-            if(fetchedPolicy == null){
-                //create policy
-                Map<String, RangerPolicy.RangerPolicyResource> resource = Collections.singletonMap(
-                        resourceType, new RangerPolicy.RangerPolicyResource(Collections.singletonList(resourceName),false,false));
-                RangerPolicy policy = new RangerPolicy();
-                policy.setService(rangerServiceName);
-                policy.setName(policyName);
-                policy.setResources(resource);
-                RangerPolicy.RangerPolicyItem policyItem = new RangerPolicy.RangerPolicyItem();
-                policyItem.setUsers(Collections.singletonList(userName));
-                List<RangerPolicy.RangerPolicyItemAccess> accesses = new ArrayList<>();
-                accesses.add(new RangerPolicy.RangerPolicyItemAccess("delete-" + resourceType));
-                accesses.add(new RangerPolicy.RangerPolicyItemAccess("edit-" + resourceType));
-                if("model".equals(resourceType))
-                    accesses.add(new RangerPolicy.RangerPolicyItemAccess("promote-model"));
-                policyItem.setAccesses(accesses);
-                policy.setPolicyItems(Collections.singletonList(policyItem));
-                RangerPolicy createdPolicy = rangerClient.createPolicy(policy);
-                logger.info("New Policy created successfully {}", gsonBuilder.toJson(createdPolicy));
-
-            }else {
-                logger.info("Policy: {} fetched {}", policyName, gsonBuilder.toJson(fetchedPolicy));
-
-                //add new model to list
-                fetchedPolicy.getResources().get(resourceType).getValues().add(resourceName);
-                rangerClient.updatePolicy(rangerServiceName, policyName, fetchedPolicy);
-                logger.info("Policy updated successfully {}", gsonBuilder.toJson(fetchedPolicy));
-            }
-        } catch (RangerServiceException e) {
-            logger.error(e);
-        }
-
+        logger.info("New Policy created successfully {}", gsonBuilder.toJson(createdPolicy));
     }
-    private void removeModelPolicy(String userName, String modelName){
-        removeResourceFromPolicy(userName, modelName, "model");
+
+    private void removeResourcePolicy(String resourceUri) throws RangerServiceException {
+        String policyName = resourceUri;
+        rangerClient.deletePolicy(rangerServiceName, policyName);
         authorizer.refresh();
-    }
-
-    private void removeExperimentPolicy(String userName, String experimentName){
-        removeResourceFromPolicy(userName, experimentName, "experiment");
-        authorizer.refresh();
-    }
-    private void removeResourceFromPolicy(String userName, String resourceName, String resourceType){
-         /*
-        Get a policy by name
-         */
-        Gson gsonBuilder = new GsonBuilder().setDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ").setPrettyPrinting().create();
-        RangerPolicy fetchedPolicy;
-        String policyName = userName + "_" +  resourceType;
-        try {
-            fetchedPolicy = rangerClient.getPolicy(rangerServiceName, policyName);
-        } catch (RangerServiceException e) {
-            logger.error(e);
-            return;
-        }
-        try {
-
-            logger.info("Policy: {} fetched {}", policyName, gsonBuilder.toJson(fetchedPolicy));
-
-            //add new model to list
-            fetchedPolicy.getResources().get(resourceType).getValues().remove(resourceName);
-            rangerClient.updatePolicy(rangerServiceName, policyName, fetchedPolicy);
-            logger.info("Policy updated successfully {}", gsonBuilder.toJson(fetchedPolicy));
-
-        } catch (RangerServiceException e) {
-            logger.error(e);
-        }
-
     }
 
     private <T> ResponseEntity<T> buildProxiedResponse(
@@ -557,9 +563,9 @@ public class ProxyService {
 
         // replacing context path form urI to match actual gateway URI
         uri = UriComponentsBuilder.fromUri(uri)
-                .path(requestUrl)
-                .query(request.getQueryString())
-                .build(true).toUri();
+            .path(requestUrl)
+            .query(request.getQueryString())
+            .build(true).toUri();
 
         HttpHeaders headers = new HttpHeaders();
         Enumeration<String> headerNames = request.getHeaderNames();
@@ -571,6 +577,7 @@ public class ProxyService {
 
         HttpEntity<String> httpEntity = new HttpEntity<>(body, headers);
         RestTemplate restTemplate = new RestTemplate(this.httpRequestFactory);
+        logger.info(uri);
         try {
             ResponseEntity<T> serverResponse = restTemplate.exchange(uri, method, httpEntity, responseType);
             logger.info(serverResponse);
@@ -593,26 +600,23 @@ public class ProxyService {
         contentTypes.add(ContentType.APPLICATION_JSON.toString());
         headers.put(HttpHeaders.CONTENT_TYPE, contentTypes);
         return ResponseEntity.status(403)
-                .headers(headers)
-                .body("{\"detail\": \"You do not have permissions to access this resource\"}");
+            .headers(headers)
+            .body("{\"detail\": \"You do not have permissions to access this resource\"}");
     }
 
-    private String getValFromQueryString(String queryString, String name){
-        if(queryString == null) return null;
-        String[] nameValPairs = queryString.split(",");
-        for(String item : nameValPairs){
-            String[] keyVal = item.split("=");
-            if(name.equals(keyVal[0]))
-                return keyVal[1];
-        }
-        return null;
+    private ResponseEntity<String> buildErrorResponse(
+        HttpServletRequest request,
+        Exception error
+    ){
+        HttpHeaders headers = new HttpHeaders();
+
+        logger.info("Failed " + request);
+        List<String> contentTypes = new ArrayList<>();
+        contentTypes.add(ContentType.APPLICATION_JSON.toString());
+        headers.put(HttpHeaders.CONTENT_TYPE, contentTypes);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+            .headers(headers)
+            .body("{\"detail\": \""+error+"\"}");
     }
 
-    @Recover
-    public ResponseEntity<String> recoverFromRestClientErrors(Exception e, String body,
-                                                              HttpMethod method, HttpServletRequest request, HttpServletResponse response, String traceId) {
-        logger.error("retry method for the following url " + request.getRequestURI() + " has failed" + e.getMessage());
-        logger.error(e.getStackTrace());
-        throw new RuntimeException("There was an error trying to process your request. Please try again later");
-    }
 }

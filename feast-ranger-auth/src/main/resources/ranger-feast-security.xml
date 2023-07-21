@@ -51,7 +51,7 @@
 
     <property>
         <name>ranger.plugin.feast.policy.pollIntervalMs</name>
-        <value>50000</value>
+        <value>1800000</value>
         <description>
             How often to poll for changes in policies?
         </description>
@@ -67,7 +67,7 @@
 
     <property>
         <name>ranger.plugin.feast.policy.rest.client.connection.timeoutMs</name>
-        <value>120000</value>
+        <value>30000</value>
         <description>
             RangerRestClient Connection Timeout in Milli Seconds
         </description>

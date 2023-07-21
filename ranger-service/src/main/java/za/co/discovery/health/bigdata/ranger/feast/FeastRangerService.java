@@ -42,6 +42,10 @@ public class FeastRangerService extends RangerBaseService {
         RestTemplate restTemplate = new RestTemplate();
 
         switch(resource) {
+            case "registry":
+                return new ArrayList<String>(Arrays.asList(feastUrl));
+
+            case "project_metadata":
             case "project":
                 FeastProjects projects = restTemplate.getForObject(
                     UriComponentsBuilder.fromHttpUrl(feastUrl+"/projects")
@@ -51,6 +55,7 @@ public class FeastRangerService extends RangerBaseService {
                     FeastProjects.class
                 );
                 return projects.getStrings();
+
             case "entity":
             case "data_source":
             case "feature_view":
@@ -70,7 +75,7 @@ public class FeastRangerService extends RangerBaseService {
                     FeastResources.class
                 );
                 return (List<String>) resources.getResources().stream().map(
-                    r -> r.getName()
+                    r -> r.getProject() + "/" + r.getType() + "/" + r.getName()
                 ).collect(Collectors.toList());
         }
 

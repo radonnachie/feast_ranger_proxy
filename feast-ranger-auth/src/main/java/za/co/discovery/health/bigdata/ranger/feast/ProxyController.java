@@ -52,23 +52,6 @@ public class ProxyController {
         );
     }
 
-    @RequestMapping(value="/resources",  method = {GET})
-    public ResponseEntity<?> sendGetResourcesToSPQ(
-        // @RequestParam("name_like", required=false) String nameLike,
-        @RequestBody(required = false) String body,
-        HttpMethod method,
-        HttpServletRequest request,
-        HttpServletResponse response
-    ) throws URISyntaxException, HttpException{
-        return service.processGetResources(
-            body,
-            method,
-            request,
-            response,
-            UUID.randomUUID().toString()
-        );
-    }
-
     @RequestMapping(value="/teardown",  method = {DELETE})
     public ResponseEntity<?> sendDeleteTeardownToSPQ(
         @RequestBody(required = false) String body,
@@ -105,7 +88,6 @@ public class ProxyController {
             response,
             UUID.randomUUID().toString()
         );
-    
     }
 
     @RequestMapping(value="/{project}",  method = {DELETE})
@@ -128,7 +110,6 @@ public class ProxyController {
             response,
             UUID.randomUUID().toString()
         );
-    
     }
 
     @RequestMapping(value="/{project}",  method = {GET})
@@ -151,7 +132,6 @@ public class ProxyController {
             response,
             UUID.randomUUID().toString()
         );
-    
     }
 
     @RequestMapping(value="/{project}/list",  method = {GET})
@@ -182,7 +162,7 @@ public class ProxyController {
         HttpServletRequest request,
         HttpServletResponse response
     ) throws URISyntaxException, HttpException{
-        return service.processGetProjectLastUpdated(
+        return service.processGetProjectDetail(
             project,
             body,
             method,
@@ -244,7 +224,7 @@ public class ProxyController {
         HttpServletRequest request,
         HttpServletResponse response
     ) throws URISyntaxException, HttpException{
-        return service.processGetProjectFeastMetadata(
+        return service.processGetProjectDetail(
             project,
             body,
             method,

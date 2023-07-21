@@ -8,19 +8,6 @@
   [
     {
       "itemId": 1,
-      "name": "project_metadata",
-      "type": "string",
-      "level": 10,
-      "mandatory": true,
-      "lookupSupported": true,
-      "recursiveSupported": true,
-      "matcher": "org.apache.ranger.plugin.resourcematcher.RangerPathResourceMatcher",
-      "matcherOptions": {"wildCard":true, "ignoreCase":true, "pathSeparatorChar":"."},
-      "label": "Project Metadata",
-      "description": "FEAST Project Metdata"
-    },
-    {
-      "itemId": 2,
       "name": "entity",
       "type": "string",
       "level": 10,
@@ -33,7 +20,7 @@
       "description": "FEAST Entity"
     },
     {
-      "itemId": 3,
+      "itemId": 2,
       "name": "data_source",
       "type": "string",
       "level": 10,
@@ -46,7 +33,7 @@
       "description": "FEAST Data Source"
     },
     {
-      "itemId": 4,
+      "itemId": 3,
       "name": "feature_view",
       "type": "string",
       "level": 10,
@@ -59,7 +46,7 @@
       "description": "FEAST Feature View"
     },
     {
-      "itemId": 5,
+      "itemId": 4,
       "name": "stream_feature_view",
       "type": "string",
       "level": 10,
@@ -72,7 +59,7 @@
       "description": "FEAST Stream Feature View"
     },
     {
-      "itemId": 6,
+      "itemId": 5,
       "name": "on_demand_feature_view",
       "type": "string",
       "level": 10,
@@ -85,7 +72,7 @@
       "description": "FEAST On Demand Feature View"
     },
     {
-      "itemId": 7,
+      "itemId": 6,
       "name": "request_feature_view",
       "type": "string",
       "level": 10,
@@ -98,7 +85,7 @@
       "description": "FEAST Request Feature View"
     },
     {
-      "itemId": 8,
+      "itemId": 7,
       "name": "feature_service",
       "type": "string",
       "level": 10,
@@ -111,7 +98,7 @@
       "description": "FEAST Feature Service"
     },
     {
-      "itemId": 9,
+      "itemId": 8,
       "name": "saved_dataset",
       "type": "string",
       "level": 10,
@@ -124,7 +111,7 @@
       "description": "FEAST Saved Dataset"
     },
     {
-      "itemId": 10,
+      "itemId": 9,
       "name": "validation_reference",
       "type": "string",
       "level": 10,
@@ -135,272 +122,66 @@
       "matcherOptions": {"wildCard":true, "ignoreCase":true, "pathSeparatorChar":"."},
       "label": "Validation Reference",
       "description": "FEAST Validation Reference"
+    },
+    {
+      "itemId": 10,
+      "name": "project",
+      "type": "string",
+      "level": 10,
+      "mandatory": true,
+      "lookupSupported": true,
+      "recursiveSupported": true,
+      "matcher": "org.apache.ranger.plugin.resourcematcher.RangerPathResourceMatcher",
+      "matcherOptions": {"wildCard":true, "ignoreCase":true, "pathSeparatorChar":"."},
+      "label": "Project",
+      "description": "FEAST Project"
+    },
+    {
+      "itemId": 11,
+      "name": "registry",
+      "type": "string",
+      "level": 10,
+      "mandatory": true,
+      "lookupSupported": true,
+      "recursiveSupported": true,
+      "matcher": "org.apache.ranger.plugin.resourcematcher.RangerPathResourceMatcher",
+      "matcherOptions": {"wildCard":true, "ignoreCase":true, "pathSeparatorChar":"."},
+      "label": "Registry",
+      "description": "FEAST Registry"
     }
   ],
   "accessTypes":
   [
     {
       "itemId": 0,
+      "name": "create",
+      "label": "create"
+    },
+    {
+      "itemId": 1,
       "name": "modify",
       "label": "modify"
     },
     {
-      "itemId": 1,
+      "itemId": 2,
       "name": "delete",
       "label": "delete"
     },
     {
-      "itemId": 2,
+      "itemId": 3,
       "name": "read",
       "label": "read"
-    },
-    {
-      "itemId": 10,
-      "name": "modify_entity",
-      "label": "modify_entity"
-    },
-    {
-      "itemId": 11,
-      "name": "delete_entity",
-      "label": "delete_entity"
-    },
-    {
-      "itemId": 12,
-      "name": "get_entity",
-      "label": "get_entity"
-    },
-    {
-      "itemId": 13,
-      "name": "list_entity",
-      "label": "list_entity"
-    },
-    {
-      "itemId": 20,
-      "name": "modify_data_source",
-      "label": "modify_data_source"
-    },
-    {
-      "itemId": 21,
-      "name": "delete_data_source",
-      "label": "delete_data_source"
-    },
-    {
-      "itemId": 22,
-      "name": "get_data_source",
-      "label": "get_data_source"
-    },
-    {
-      "itemId": 23,
-      "name": "list_data_source",
-      "label": "list_data_source"
-    },
-    {
-      "itemId": 30,
-      "name": "modify_feature_service",
-      "label": "modify_feature_service"
-    },
-    {
-      "itemId": 31,
-      "name": "delete_feature_service",
-      "label": "delete_feature_service"
-    },
-    {
-      "itemId": 32,
-      "name": "get_feature_service",
-      "label": "get_feature_service"
-    },
-    {
-      "itemId": 33,
-      "name": "list_feature_service",
-      "label": "list_feature_service"
-    },
-    {
-      "itemId": 40,
-      "name": "modify_feature_view",
-      "label": "modify_feature_view"
-    },
-    {
-      "itemId": 41,
-      "name": "delete_feature_view",
-      "label": "delete_feature_view"
-    },
-    {
-      "itemId": 42,
-      "name": "get_feature_view",
-      "label": "get_feature_view"
-    },
-    {
-      "itemId": 43,
-      "name": "list_feature_view",
-      "label": "list_feature_view"
-    },
-    {
-      "itemId": 44,
-      "name": "modify_feature_view_user_metadata",
-      "label": "modify_feature_view_user_metadata"
-    },
-    {
-      "itemId": 45,
-      "name": "get_feature_view_user_metadata",
-      "label": "get_feature_view_user_metadata"
-    },
-    {
-      "itemId": 50,
-      "name": "modify_stream_feature_view",
-      "label": "modify_stream_feature_view"
-    },
-    {
-      "itemId": 52,
-      "name": "get_stream_feature_view",
-      "label": "get_stream_feature_view"
-    },
-    {
-      "itemId": 53,
-      "name": "list_stream_feature_view",
-      "label": "list_stream_feature_view"
-    },
-    {
-      "itemId": 54,
-      "name": "modify_stream_feature_view_user_metadata",
-      "label": "modify_stream_feature_view_user_metadata"
-    },
-    {
-      "itemId": 55,
-      "name": "get_stream_feature_view_user_metadata",
-      "label": "get_stream_feature_view_user_metadata"
-    },
-    {
-      "itemId": 60,
-      "name": "modify_on_demand_feature_view",
-      "label": "modify_on_demand_feature_view"
-    },
-    {
-      "itemId": 62,
-      "name": "get_on_demand_feature_view",
-      "label": "get_on_demand_feature_view"
-    },
-    {
-      "itemId": 63,
-      "name": "list_on_demand_feature_view",
-      "label": "list_on_demand_feature_view"
-    },
-    {
-      "itemId": 64,
-      "name": "modify_on_demand_feature_view_user_metadata",
-      "label": "modify_on_demand_feature_view_user_metadata"
-    },
-    {
-      "itemId": 65,
-      "name": "get_on_demand_feature_view_user_metadata",
-      "label": "get_on_demand_feature_view_user_metadata"
-    },
-    {
-      "itemId": 70,
-      "name": "modify_request_feature_view",
-      "label": "modify_request_feature_view"
-    },
-    {
-      "itemId": 72,
-      "name": "get_request_feature_view",
-      "label": "get_request_feature_view"
-    },
-    {
-      "itemId": 73,
-      "name": "list_request_feature_view",
-      "label": "list_request_feature_view"
-    },
-    {
-      "itemId": 74,
-      "name": "modify_request_feature_view_user_metadata",
-      "label": "modify_request_feature_view_user_metadata"
-    },
-    {
-      "itemId": 75,
-      "name": "get_request_feature_view_user_metadata",
-      "label": "get_request_feature_view_user_metadata"
-    },
-    {
-      "itemId": 80,
-      "name": "modify_validation_reference",
-      "label": "modify_validation_reference"
-    },
-    {
-      "itemId": 81,
-      "name": "delete_validation_reference",
-      "label": "delete_validation_reference"
-    },
-    {
-      "itemId": 82,
-      "name": "get_validation_reference",
-      "label": "get_validation_reference"
-    },
-    {
-      "itemId": 83,
-      "name": "list_validation_reference",
-      "label": "list_validation_reference"
-    },
-    {
-      "itemId": 90,
-      "name": "modify_saved_dataset",
-      "label": "modify_saved_dataset"
-    },
-    {
-      "itemId": 92,
-      "name": "get_saved_dataset",
-      "label": "get_saved_dataset"
-    },
-    {
-      "itemId": 93,
-      "name": "list_saved_dataset",
-      "label": "list_saved_dataset"
-    },
-    {
-      "itemId": 100,
-      "name": "modify_managed_infra",
-      "label": "modify_managed_infra"
-    },
-    {
-      "itemId": 102,
-      "name": "get_managed_infra",
-      "label": "get_managed_infra"
-    },
-    {
-      "itemId": 112,
-      "name": "get_project_metadata",
-      "label": "get_project_metadata"
     }
   ],
 
   "configs":
   [
     {
-      "itemId": 1,
-      "name": "username",
-      "type": "string",
-      "mandatory": true,
-      "label": "Username"
-    },
-    {
-      "itemId": 2,
-      "name": "password",
-      "type": "password",
-      "mandatory": true,
-      "label": "Password"
-    },
-    {
       "itemId": 3,
       "name": "feast.url",
       "type": "string",
       "mandatory": true,
       "label": "Feast server url"
-    },
-
-    {
-      "itemId": 4,
-      "name": "commonNameForCertificate",
-      "type": "string",
-      "mandatory": false,
-      "label": "Common Name for Certificate"
     }
   ],
 
